@@ -28,9 +28,6 @@
 #define ARG_TRACK_DIR     "--track-dir"
 #define ARG_REMOVE_DIR    "--remove-dir"
 
-#define MATCH_ARGS(str1, str2) if (strcmp(str1, str2) == 0)
-#define CHECK_ATTR(argc, min) if (argc < min) { exit(-1); }
-
 enum cli_op {
 	ADD_DIR = 0,
 	RM_DIR  = 1,

@@ -18,7 +18,10 @@
  *
  */
 
+#include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <syslog.h>
@@ -27,6 +30,9 @@
 
 #define CLI_PORT 5001
 #define HOSTNAME_MAX 64
+
+#define MATCH_ARGS(str1, str2) if (strcmp(str1, str2) == 0)
+#define CHECK_ATTR(argc, min) if (argc < min) { exit(-1); }
 
 int write_to_server(struct op_msg msg)
 {
