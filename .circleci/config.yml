@@ -1,0 +1,92 @@
+# Use the latest 2.1 version of CircleCI pipeline process engine.
+# See: https://circleci.com/docs/2.0/configuration-reference
+version: 2.1
+orbs:
+  cloudsmith: cloudsmith/cloudsmith@1.0.4
+jobs:
+  build-test:
+    docker:
+      - image: kernelci/build-clang-13:latest
+    resource_class: xlarge
+    working_directory: ~/build
+    steps:
+      - checkout
+      - run: 'apt-get update -qq --allow-releaseinfo-change'
+      - run: 'apt-get install -y sudo rpm cpio'
+      - run: 'apt-get install -y build-essential rsync libtool libncurses5-dev'
+      - run: 'apt-get install -y libncursesw5-dev bc pkg-config zsh libelf-dev'
+      - run: 'apt-get install -y bison flex binutils-dev gcc libinih-dev'
+      - run: 'apt-get install -y uncrustify alien'
+      - run: 'apt-get install -y git'
+      - run: 'apt-get install -y clang'
+      - run: 'apt-get install -y libssl-dev'
+      - run: 'apt-get install -y libcap-dev'
+      - run: 'apt-get install -y dwarves'
+      - run: 'wget http://mirrors.kernel.org/ubuntu/pool/universe/libb/libbpf/libbpf0_0.5.0-1~ubuntu20.04.1_amd64.deb'
+      - run: 'apt install -y ./libbpf0_0.5.0-1~ubuntu20.04.1_amd64.deb'
+      - run: 'pahole --version'
+      - run: 'make circle_build_kernel'
+      - run: 'make btf_circle'
+      - run: 'make all'
+      - run: 'make rpm'
+      - run: 'make deb'
+      - run: 'cd ./output && ls'
+      - persist_to_workspace:
+          root: .
+          paths:
+            - output
+      - store_artifacts:
+          path: ./output/thoth-cli-0.0.0-1.x86_64.rpm
+      - store_artifacts:
+          path: ./output/thoth-cli_0.0.0-2_amd64.deb
+  publish:
+    executor: cloudsmith/default
+    working_directory: ~/build
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/build
+      - cloudsmith/ensure-api-key
+      - cloudsmith/install-cli
+      - run: 'cd ./output && ls'
+      - cloudsmith/publish:
+          allow-republish: true
+          cloudsmith-repository: camflow/camflow
+          package-path: output/thoth-cli*.x86_64.rpm
+          package-format: rpm
+          package-distribution: fedora/37
+      - cloudsmith/publish:
+          allow-republish: true
+          cloudsmith-repository: camflow/camflow
+          package-path: output/thoth-cli*amd64.deb
+          package-format: deb
+          package-distribution: ubuntu/jammy
+
+# Invoke jobs via workflows
+# See: https://circleci.com/docs/2.0/configuration-reference/#workflows
+workflows:
+  build-test-workflow:
+    jobs:
+      - build-test:
+          filters:
+            tags:
+              only: /.*/
+      - publish:
+          requires:
+            - build-test
+          filters:
+            tags:
+              ignore: /test/
+            branches:
+              ignore: /.*/
+  nightly:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches:
+              only:
+                - main
+                - dev
+    jobs:
+      - build-test
