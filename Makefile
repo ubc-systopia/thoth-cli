@@ -1,3 +1,5 @@
+version=0.0.0
+
 cli:
 	clang -Wall thoth.c -o thoth.o -c
 	clang -o thoth \
