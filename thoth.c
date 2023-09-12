@@ -1,3 +1,29 @@
+/**********************************************************************************************************
+ *
+ * MIT License
+ * 
+ * Copyright (c) 2023 Systopia Lab, Computer Science, University of British Columbia
+ * Copyright (c) 2023, Oracle and/or its affiliates.
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ ***********************************************************************************************************/
+
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -84,6 +110,30 @@ int remove_dir(char *arg)
 	return 0;
 }
 
+int start_session(char *label, char *description)
+{
+	struct op_msg msg = {
+		.op = SESSION_START,
+	};
+
+	snprintf(msg.arg[0], ARG_LEN, "%s", label);
+	snprintf(msg.arg[1], ARG_LEN, "%s", description);
+	write_to_server(msg);
+	return 0;
+}
+
+int end_session(char *label, char *description)
+{
+	struct op_msg msg = {
+		.op = SESSION_END,
+	};
+
+	snprintf(msg.arg[0], ARG_LEN, "%s", label);
+	snprintf(msg.arg[1], ARG_LEN, "%s", description);
+	write_to_server(msg);
+	return 0;
+}
+
 int main(int argc, char *argv[])
 {
 	CHECK_ATTR(argc, 2);
@@ -97,6 +147,25 @@ int main(int argc, char *argv[])
 	MATCH_ARGS(argv[1], ARG_REMOVE_DIR) {
 		CHECK_ATTR(argc, 3);
 		remove_dir(argv[2]);
+		return 0;
+	}
+
+	// add function to specify where to output the log
+	MATCH_ARGS(argv[1], ARG_LOG_OUTPUT) {
+		CHECK_ATTR(argc, 3);
+		// update log file
+		return 0;
+	}
+
+	MATCH_ARGS(argv[1], ARG_SESSION_START) {
+		CHECK_ATTR(argc, 4);
+		start_session(argv[2], argv[3]);
+		return 0;
+	}
+
+	MATCH_ARGS(argv[1], ARG_SESSION_END) {
+		CHECK_ATTR(argc, 4);
+		end_session(argv[2], argv[3]);
 		return 0;
 	}
 
